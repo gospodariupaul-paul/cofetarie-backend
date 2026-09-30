@@ -1,0 +1,42 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Tabelul pentru Prăjituri, Torturi și Oferte Tech
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  category    String   // "torturi", "prajituri", "tech-deals"
+  imageUrl    String?
+  discount    Int      @default(0) // Folositor pentru Hot Deals (-28%)
+  rating      Float    @default(5.0)
+  icon        String?  // Emoji sau nume pictogramă (ex: "🤖", "🎂")
+  tag         String?  // ex: "Cel mai vândut", "Stoc Limitat"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Tabelul pentru Utilizatori (Log In / Register)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+// Tabelul pentru Comenzi recepționate
+model Order {
+  id          String   @id @default(uuid())
+  clientName  String
+  phone       String
+  totalAmount Float
+  status      String   @default("În așteptare")
+  createdAt   DateTime @default(now())
+}
