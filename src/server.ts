@@ -47,7 +47,50 @@ app.post("/api/comenzi", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Eroare la salvarea comenzii în Neon" });
   }
 });
+// NOU: Endpoint pentru Înregistrare Utilizator Nou în Neon
+app.post("/api/register", async (req: Request, res: Response) => {
+  try {
+    const { email, password, name } = req.body;
 
+    // Verificăm dacă emailul este deja înregistrat
+    const utilizatorExistent = await prisma.user.findUnique({ where: { email } });
+    if (utilizatorExistent) {
+      return res.status(400).json({ message: "Acest email este deja utilizat de alt cont." });
+    }
+
+    // Salvăm utilizatorul în mod direct în tabela User din Neon
+    const utilizatorNou = await prisma.user.create({
+      data: { email, password, name: name || "Client" }
+    });
+
+    res.status(201).json({ succes: true, user: utilizatorNou });
+  } catch (error) {
+    console.error("Eroare la register:", error);
+    res.status(500).json({ message: "Eroare de server la crearea contului." });
+  }
+});
+
+// NOU: Endpoint pentru Conectare / Login
+app.post("/api/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    // Căutăm contul în baza de date
+    const utilizator = await prisma.user.findUnique({ where: { email } });
+    if (!utilizator || utilizator.password !== password) {
+      return res.status(401).json({ message: "Email sau parolă incorectă." });
+    }
+
+    res.status(200).json({ 
+      succes: true, 
+      token: "simulated-token-real-auth", 
+      user: { email: utilizator.email, name: utilizator.name } 
+    });
+  } catch (error) {
+    console.error("Eroare la login:", error);
+    res.status(500).json({ message: "Eroare de server la autentificare." });
+  }
+});
 app.listen(PORT, () => {
   console.log(`⚡ Server backend activ pe: http://localhost:${PORT}`);
 });
