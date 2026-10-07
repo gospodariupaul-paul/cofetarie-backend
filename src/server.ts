@@ -34,6 +34,29 @@ app.get("/api/produse", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Eroare la extragerea produselor din Neon" });
   }
 });
+// NOU: Endpoint pentru adăugarea unui produs nou cu imagine în Neon
+app.post("/api/produse", async (req: Request, res: Response) => {
+  try {
+    const { name, description, price, category, icon, tag } = req.body;
+
+    // Salvăm produsul în tabela Product din baza de date Neon
+    const produsNou = await prisma.product.create({
+      data: {
+        name,
+        description: description || "",
+        price: parseFloat(price),
+        category,
+        icon: icon || "🧁", // Aici se va salva codul text (Base64) al imaginii încărcate
+        tag: tag || null
+      }
+    });
+
+    res.status(201).json({ succes: true, date: produsNou });
+  } catch (error) {
+    console.error("Eroare la adăugarea produsului în Neon:", error);
+    res.status(400).json({ error: "Eroare la salvarea produsului în baza de date Neon." });
+  }
+});
 
 // Endpoint pentru crearea unei comenzi noi în Neon
 app.post("/api/comenzi", async (req: Request, res: Response) => {
