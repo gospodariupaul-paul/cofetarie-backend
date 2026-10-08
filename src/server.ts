@@ -62,6 +62,42 @@ app.post("/api/produse", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Eroare la salvarea produsului în baza de date Neon." });
   }
 });
+// NOU: Endpoint pentru ștergerea unui produs din Neon
+app.delete("/api/produse/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.product.delete({ where: { id } });
+    res.status(200).json({ succes: true, message: "Produsul a fost șters." });
+  } catch (error) {
+    console.error("Eroare la ștergerea produsului:", error);
+    res.status(500).json({ error: "Nu s-a putut șterge produsul din Neon." });
+  }
+});
+
+// NOU: Endpoint pentru actualizarea unui produs (preț, imagine, nume etc.)
+app.put("/api/produse/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, category, icon, tag } = req.body;
+
+    const produsActualizat = await prisma.product.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        price: parseFloat(price),
+        category,
+        icon,
+        tag: tag || null
+      }
+    });
+
+    res.status(200).json({ succes: true, date: produsActualizat });
+  } catch (error) {
+    console.error("Eroare la actualizarea produsului:", error);
+    res.status(400).json({ error: "Nu s-au putut salva modificările în Neon." });
+  }
+});
 
 // Endpoint pentru crearea unei comenzi noi în Neon
 app.post("/api/comenzi", async (req: Request, res: Response) => {
