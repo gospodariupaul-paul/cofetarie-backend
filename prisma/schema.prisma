@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -17,7 +16,7 @@ model Product {
   imageUrl    String?
   discount    Int      @default(0) // Folositor pentru Hot Deals (-28%)
   rating      Float    @default(5.0)
-  icon        String?  @db.Text    // MODIFICAT: Permite salvarea codului text al imaginilor încărcate (Base64)
+  icon        String?  @db.Text    // Permite salvarea codului text al imaginilor încărcate (Base64)
   tag         String?  // ex: "Cel mai vândut", "Stoc Limitat"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
