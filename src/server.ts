@@ -19,11 +19,15 @@ const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL || "
 export const prisma = new PrismaClient({ adapter });
 
 app.use(cors());
-app.use(express.json());
+
+// MODIFICAT: Mărirea limitei de primire date la 50MB pentru a permite imagini mari Base64
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Serverul Express cu Neon PostgreSQL rulează cu succes pe portul " + PORT);
 });
+
 // Endpoint pentru citirea produselor salvate în Neon
 app.get("/api/produse", async (req: Request, res: Response) => {
   try {
@@ -34,7 +38,8 @@ app.get("/api/produse", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Eroare la extragerea produselor din Neon" });
   }
 });
-// NOU: Endpoint pentru adăugarea unui produs nou cu imagine în Neon
+
+// Endpoint pentru adăugarea unui produs nou cu imagine în Neon
 app.post("/api/produse", async (req: Request, res: Response) => {
   try {
     const { name, description, price, category, icon, tag } = req.body;
@@ -70,7 +75,8 @@ app.post("/api/comenzi", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Eroare la salvarea comenzii în Neon" });
   }
 });
-// NOU: Endpoint pentru Înregistrare Utilizator Nou în Neon
+
+// Endpoint pentru Înregistrare Utilizator Nou în Neon
 app.post("/api/register", async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
@@ -93,7 +99,7 @@ app.post("/api/register", async (req: Request, res: Response) => {
   }
 });
 
-// NOU: Endpoint pentru Conectare / Login
+// Endpoint pentru Conectare / Login
 app.post("/api/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -114,6 +120,7 @@ app.post("/api/login", async (req: Request, res: Response) => {
     res.status(500).json({ message: "Eroare de server la autentificare." });
   }
 });
+
 app.listen(PORT, () => {
   console.log(`⚡ Server backend activ pe: http://localhost:${PORT}`);
 });
