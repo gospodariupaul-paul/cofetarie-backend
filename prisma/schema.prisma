@@ -40,3 +40,10 @@ model Order {
   status      String   @default("În așteptare")
   createdAt   DateTime @default(now())
 }
+// Model NOU pentru stocarea mesajelor din chat în timp real
+model ChatMessage {
+  id        String   @id @default(uuid())
+  emitent   String   // "user" sau "suport"
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+}

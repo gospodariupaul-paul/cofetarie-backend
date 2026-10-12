@@ -8,19 +8,15 @@ import ws from "ws";
 
 dotenv.config();
 
-// Configurare obligatorie WebSocket pentru Neon în mediul Node local
 neonConfig.webSocketConstructor = ws;
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Inițializăm adaptorul Neon și Clientul Prisma
 const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL || "" });
 export const prisma = new PrismaClient({ adapter });
 
 app.use(cors());
-
-// Mărirea limitei de primire date la 50MB pentru a permite imagini mari Base64
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -28,133 +24,120 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Serverul Express cu Neon PostgreSQL rulează cu succes pe portul " + PORT);
 });
 
-// Endpoint pentru citirea produselor salvate în Neon
+// Endpoint: Citire mesaje chat din Neon
+app.get("/api/chat", async (req: Request, res: Response) => {
+  try {
+    const mesaje = await prisma.chatMessage.findMany({
+      orderBy: { createdAt: "asc" }
+    });
+    res.status(200).json(mesaje);
+  } catch (error) {
+    console.error("Eroare la citirea chatului:", error);
+    res.status(500).json({ error: "Eroare la extragerea mesajelor din Neon" });
+  }
+});
+
+// Endpoint: Salvare mesaj nou în chat
+app.post("/api/chat", async (req: Request, res: Response) => {
+  try {
+    const { emitent, text } = req.body;
+    const mesajNou = await prisma.chatMessage.create({
+      data: { emitent, text }
+    });
+    res.status(201).json({ succes: true, date: mesajNou });
+  } catch (error) {
+    console.error("Eroare la salvarea mesajului:", error);
+    res.status(400).json({ error: "Eroare la salvarea în Neon" });
+  }
+});
+
+// Endpoint: Produse
 app.get("/api/produse", async (req: Request, res: Response) => {
   try {
     const produse = await prisma.product.findMany();
     res.status(200).json(produse);
   } catch (error) {
-    console.error("Eroare la citirea produselor:", error);
-    res.status(500).json({ error: "Eroare la extragerea produselor din Neon" });
+    res.status(500).json({ error: "Eroare produse" });
   }
 });
 
-// Endpoint pentru adăugarea unui produs nou cu imagine în Neon
 app.post("/api/produse", async (req: Request, res: Response) => {
   try {
     const { name, description, price, category, icon, tag } = req.body;
-
-    // Salvăm produsul în tabela Product din baza de date Neon
     const produsNou = await prisma.product.create({
-      data: {
-        name,
-        description: description || "",
-        price: parseFloat(price),
-        category,
-        icon: icon || "🧁", // Aici se va salva codul text (Base64) al imaginii încărcate
-        tag: tag || null
-      }
+      data: { name, description: description || "", price: parseFloat(price), category, icon: icon || "🧁", tag: tag || null }
     });
-
     res.status(201).json({ succes: true, date: produsNou });
   } catch (error) {
-    console.error("Eroare la adăugarea produsului în Neon:", error);
-    res.status(400).json({ error: "Eroare la salvarea produsului în baza de date Neon." });
+    res.status(400).json({ error: "Eroare salvare produs" });
   }
 });
 
-// REPARAT CHIRURGICAL: Endpoint pentru ștergerea unui produs din Neon (Corecție TypeScript)
 app.delete("/api/produse/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     await prisma.product.delete({ where: { id } });
-    res.status(200).json({ succes: true, message: "Produsul a fost șters cu succes." });
+    res.status(200).json({ succes: true });
   } catch (error) {
-    console.error("Eroare la ștergerea produsului:", error);
-    res.status(500).json({ error: "Nu s-a putut șterge produsul din Neon." });
+    res.status(500).json({ error: "Eroare stergere" });
   }
 });
 
-// REPARAT CHIRURGICAL: Endpoint pentru actualizarea unui produs (Corecție TypeScript)
 app.put("/api/produse/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const { name, description, price, category, icon, tag } = req.body;
-
-    const produsActualizat = await prisma.product.update({
+    const prod = await prisma.product.update({
       where: { id },
-      data: {
-        name,
-        description,
-        price: parseFloat(price),
-        category,
-        icon,
-        tag: tag || null
-      }
+      data: { name, description, price: parseFloat(price), category, icon, tag: tag || null }
     });
-
-    res.status(200).json({ succes: true, date: produsActualizat });
+    res.status(200).json({ succes: true, date: prod });
   } catch (error) {
-    console.error("Eroare la actualizarea produsului:", error);
-    res.status(400).json({ error: "Nu s-au putut salva modificările în Neon." });
+    res.status(400).json({ error: "Eroare modificare" });
   }
 });
 
-// Endpoint pentru crearea unei comenzi noi în Neon
+// Endpoint: Comenzi
 app.post("/api/comenzi", async (req: Request, res: Response) => {
   try {
     const { clientName, phone, totalAmount } = req.body;
-    const comandaNoua = await prisma.order.create({
-      data: { clientName, phone, totalAmount }
-    });
+    const comandaNoua = await prisma.order.create({ data: { clientName, phone, totalAmount } });
     res.status(201).json({ succes: true, date: comandaNoua });
   } catch (error) {
-    res.status(400).json({ error: "Eroare la salvarea comenzii în Neon" });
+    res.status(400).json({ error: "Eroare comanda" });
   }
 });
 
-// Endpoint pentru Înregistrare Utilizator Nou în Neon
+app.get("/api/comenzi", async (req: Request, res: Response) => {
+  try {
+    const comenzi = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+    res.status(200).json(comenzi);
+  } catch (error) {
+    res.status(500).json({ error: "Eroare preluare comenzi" });
+  }
+});
+
+// Endpoint: Autentificare
 app.post("/api/register", async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
-
-    // Verificăm dacă emailul este deja înregistrat
-    const utilizatorExistent = await prisma.user.findUnique({ where: { email } });
-    if (utilizatorExistent) {
-      return res.status(400).json({ message: "Acest email este deja utilizat de alt cont." });
-    }
-
-    // Salvăm utilizatorul în mod direct în tabela User din Neon
-    const utilizatorNou = await prisma.user.create({
-      data: { email, password, name: name || "Client" }
-    });
-
-    res.status(201).json({ succes: true, user: utilizatorNou });
+    const existent = await prisma.user.findUnique({ where: { email } });
+    if (existent) return res.status(400).json({ message: "Email existent" });
+    const nou = await prisma.user.create({ data: { email, password, name: name || "Client" } });
+    res.status(201).json({ succes: true, user: nou });
   } catch (error) {
-    console.error("Eroare la register:", error);
-    res.status(500).json({ message: "Eroare de server la crearea contului." });
+    res.status(500).json({ message: "Eroare server" });
   }
 });
 
-// Endpoint pentru Conectare / Login
 app.post("/api/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
-    // Căutăm contul în baza de date
-    const utilizator = await prisma.user.findUnique({ where: { email } });
-    if (!utilizator || utilizator.password !== password) {
-      return res.status(401).json({ message: "Email sau parolă incorectă." });
-    }
-
-    res.status(200).json({ 
-      succes: true, 
-      token: "simulated-token-real-auth", 
-      user: { email: utilizator.email, name: utilizator.name } 
-    });
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (!u || u.password !== password) return res.status(401).json({ message: "Incorect" });
+    res.status(200).json({ succes: true, token: "token", user: { email: u.email, name: u.name } });
   } catch (error) {
-    console.error("Eroare la login:", error);
-    res.status(500).json({ message: "Eroare de server la autentificare." });
+    res.status(500).json({ message: "Eroare server" });
   }
 });
 
