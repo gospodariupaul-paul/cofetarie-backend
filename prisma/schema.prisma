@@ -40,9 +40,12 @@ model Order {
   status      String   @default("În așteptare")
   createdAt   DateTime @default(now())
 }
-// Model NOU pentru stocarea mesajelor din chat în timp real
+
+// Tabelul UPGRADAT: Permite conversații separate pe camere între clienți și admin
 model ChatMessage {
   id        String   @id @default(uuid())
+  userId    String   // Separă mesajele pe clienți (stochează emailul sau id-ul unic)
+  userName  String   @default("Client") // Numele afișat în panoul de admin
   emitent   String   // "user" sau "suport"
   text      String   @db.Text
   createdAt DateTime @default(now())
